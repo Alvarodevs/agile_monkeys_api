@@ -7,8 +7,8 @@ api = Blueprint('api', __name__)
 #Importing seed customer data
 with open('api\data\seed_new_customer.json') as f:
     data = json.load(f)
-    print(data)
 
+#ROUTES ADMIN
 @api.route("/")
 def index():
     return data
@@ -18,25 +18,27 @@ def index():
 def handle_users():
     user = User.query.all()
     users = list(map(lambda user: user.serialize()))
-    return jsonify(data), 200
+    return jsonify(users), 200
 
-# @api.route("/admin", methods="POST")
-# def create_user():
-#     body = request.get_json()
-#     user_name = body.get("user_name", None)
-#     password = body.get("password", None)
+@api.route("/admin", methods=["POST"])
+def create_user():
+    body = request.get_json()
+    user_name = body.get("user_name", None)
+    password = body.get("password", None)
 
-#     new_user = User(user_name=user_name)  
-#     db.session.add(new_user)
-#     db.session.commit()
-#     access_token = create_access_token(identity=new_user.serialize())
+    new_user = User(user_name=user_name)  
+    db.session.add(new_user)
+    db.session.commit()
+    access_token = create_access_token(identity=new_user.serialize())
 
-#     return jsonify(user=new_user.serialize(), accesToken=access_token)
+    return jsonify(user=new_user.serialize(), accesToken=access_token)
 
 #USER HANDLING CUSTOMERS
-# @api.route("/user", methods=["GET"])
-# def list_of_all_customers():
-#         pass
+@api.route("/user", methods=["GET"])
+def list_of_all_customers():
+    customer = Customer.query.all()
+    customers = list(map(lambda customer: customer.serialize()))
+    return {customers}, 200
 
 # def single_customer_info():
 #         pass

@@ -12,6 +12,7 @@ flask-cors = "*"
 requests = "*"
 flask = "*"
 sqlalchemy = "*"
+cloudinary = "*"
 
 [dev-packages]
 

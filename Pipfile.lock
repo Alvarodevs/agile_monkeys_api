@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "82b81e04afc5ecc1ba6acd53cf80b4f6c83f449e7e715899d2002824c9b72232"
+            "sha256": "7d5d4106bee80df98d6ee064ebc34a8d8c9772ad465b66f443bd2b077fbed356"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -46,6 +46,13 @@
             ],
             "markers": "python_version >= '3.6'",
             "version": "==8.0.1"
+        },
+        "cloudinary": {
+            "hashes": [
+                "sha256:c6778f14a47f632378be172bbd470088421ac7ee0ace01fc9658ac3ac0ecd82d"
+            ],
+            "index": "pypi",
+            "version": "==1.26.0"
         },
         "colorama": {
             "hashes": [
