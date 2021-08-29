@@ -14,15 +14,22 @@ api = Blueprint('api', __name__)
 #     return data
 
 #Importing seed customer data
-with open('api\data\seed_new_customer.json') as f:
-    data = json.load(f)
+# with open('api\data\seed_new_customer.json') as f:
+#     data = json.load(f)
 
 #####       ADMIN SECTION           ######
 def current_admin(identity):
-    admin = Admin.query.get(identity["id"])
+    return Admin.query.get(identity['id'])
+
+@api.route("/admin", methods=["GET"]) ### DONE LIST ADMIN
+def get_admins():
+    admin = Admin.query.all()
+    admins = list(map(lambda admin: admin.serialize(), admin))
+    return jsonify(admins), 200
 
 #####       USERS SECTION           ######
-@api.route("/users", methods=["GET"]) ### DONE
+
+@api.route("/users", methods=["GET"]) ### DONE LIST USERS
 @jwt_required()
 def handle_users():
     admin = current_admin(get_jwt_identity())
@@ -30,7 +37,7 @@ def handle_users():
     users = list(map(lambda user: user.serialize(), user))
     return jsonify(users), 200
 
-@api.route("/users_sign_up", methods=["POST"]) ### DONE
+@api.route("/users_sign_up", methods=["POST"]) ### DONE CREATE USERS
 @jwt_required()
 def create_user():
     admin = current_admin(get_jwt_identity())
@@ -39,7 +46,7 @@ def create_user():
     password = body.get("password", None)
     is_active = True
 
-    if not user_name == "admin":
+    if "admin" not in user_name:
         new_user = Users(user_name, password, is_active) 
         db.session.add(new_user)
         db.session.commit()
@@ -52,15 +59,40 @@ def create_user():
         access_token = create_access_token(identity=new_admin.serialize())
         return jsonify(user=new_admin.serialize(), accessToken=access_token)
     
+@api.route("/user/<int:id>", methods=["GET", "DELETE"]) ### DONE GET & DELETE USERS
+@jwt_required()
+def handle_one_user(id):
+    admin = current_admin(get_jwt_identity())
+    if request.method == "GET":
+        user = Users.query.get(id)
+        return jsonify(user.serialize()), 200
+    else:
+        user = Users.query.get(id)
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify(user.serialize()), 200
 
-@api.route("/login", methods=["POST"]) ### DONE
+@api.route("/user/<int:id>", methods=["PUT"])
+@jwt_required
+def update_user(id):
+    admin = current_admin(get_jwt_identity())
+    user = Users.query.filter_by(id) 
+    print("USER", user)
+
+    body_json = request.get_json()
+    user.user_name = body_json["user_name"]
+    user.is_active = body_json["is_active"] 
+    db.session.commit()
+    return jsonify(user.serialize()), 200
+
+@api.route("/login", methods=["POST"]) ### DONE LOGIN USERS & ADMIN
 def sign_in():
     status = "NOP"
     body = request.get_json()
     user_name = body.get("user_name", None)
     password = body.get("password", None)
     
-    if not "admin" in user_name:
+    if "admin" not in user_name:
         user = Users.query.filter_by(user_name=user_name).one_or_none()
         if not user or not user.check_password(password):
             return jsonify({"status": status, "msg": "Are you sure folk? Please, try again."}), 401
@@ -108,13 +140,16 @@ def create_customer():
     if request.method == "POST":
         body_json = request.get_json()
         created_at = datetime.now()
-        #Received binary file in body_json & storing in cloudinary --> Cloudinary OK
+
+        #Received binary file in body_json & storing in cloudinary --> Cloudinary store OK
         avatar_cloudinary = cloudinary.uploader.upload(body_json["avatar_url"], public_id = "agile_monkeys/avatar_image")
 
-        customer = Customer(name=body_json["name"], surname=body_json["surname"], avatar_url=avatar_cloudinary["secure_url"], user_id_creator=user, created_at=created_at)
+        customer = Customer(name=body_json["name"], surname=body_json["surname"], avatar_url=avatar_cloudinary["secure_url"], user_name_creator=user, created_at=created_at)
 
 
         print("AVATAR", avatar_cloudinary['secure_url'])
+
+
         db.session.add(customer)
         db.session.commit()
     

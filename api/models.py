@@ -73,13 +73,13 @@ class Customer(db.Model):
     user_name_creator = db.Column(db.String(20), unique=False, nullable=False)
     created_at = db.Column()
     modified_at = db.Column(DateTime(), default=datetime.now()) #Date must be set from POST method
-    modified_by = db.Column(db.Integer)
-    #db.String(50), unique=False, nullable=False
-    def __init__(self, name, surname, avatar_url, user_id_creator, created_at):
+    modified_by = db.Column(db.Integer)#db.String(50), unique=False, nullable=False
+
+    def __init__(self, name, surname, avatar_url, user_name_creator, created_at):
        self.name = name
        self.surname = surname
        self.avatar_url = avatar_url
-       self.user_id_creator = user_id_creator
+       self.user_name_creator = user_name_creator
        self.created_at = created_at
 
     def __repr__(self):
