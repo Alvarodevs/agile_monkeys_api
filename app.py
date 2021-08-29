@@ -14,6 +14,7 @@ migrate = Migrate(app, db)
 db.init_app(app)
 
 #Adding JWT
+app.config["JWT_SECRET_KEY"] = "agile_monkeys"
 jwt = JWTManager(app)
 
 #Adding all endpoints from /api
