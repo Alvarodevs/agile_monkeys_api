@@ -43,10 +43,11 @@ class Users(db.Model):
     customers = db.relationship('Customer', backref='user', lazy=True)
     admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'))
 
-    def __init__(self, name, password, is_active):
+    def __init__(self, name, password, is_active, admin):
        self.user_name = name
        self.password = password
        self.is_active = is_active
+       self.admin_id = admin
        
     def __repr__(self):
         return '<User %r>' % self.user_name 

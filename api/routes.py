@@ -19,7 +19,19 @@ api = Blueprint('api', __name__)
 
 #####       ADMIN SECTION           ######
 def current_admin(identity):
-    return Admin.query.get(identity['id'])
+    print("IDENTITY", identity)                          
+    return Admin.query.get(identity["id"])              #-----> SE PIDE ID, PERO DEVUELVE USER-NAME
+
+@api.route("/admin_sign_up", methods=["POST"])   #-----> ¿AUTHENTICATION OAUTH?
+def admin_sign_up():    
+    body = request.get_json(force=True)
+    user_name = body.get("user_name", None)
+    password = body.get("password", None)
+    new_admin = Admin(user_name, password)
+    db.session.add(new_admin)
+    db.session.commit()
+    access_token = create_access_token(identity=new_admin.serialize())
+    return jsonify(user=new_admin.serialize(), accessToken=access_token)
 
 @api.route("/admin", methods=["GET"]) ### DONE LIST ADMIN
 def get_admins():
@@ -37,29 +49,22 @@ def handle_users():
     users = list(map(lambda user: user.serialize(), user))
     return jsonify(users), 200
 
-@api.route("/users_sign_up", methods=["POST"]) ### DONE CREATE USERS
-@jwt_required()
+@api.route("/users_sign_up", methods=["POST"]) ### DONE CREATE USERS  --> ANTES ERA IF..ELSE FILTRANDO SI 
+@jwt_required()                                                         # USER_NAME CONTIENE "ADMIN"    
 def create_user():
     admin = current_admin(get_jwt_identity())
     body = request.get_json(force=True)
     user_name = body.get("user_name", None)
     password = body.get("password", None)
-    is_active = True
-
-    if "admin" not in user_name:
-        new_user = Users(user_name, password, is_active) 
-        db.session.add(new_user)
-        db.session.commit()
-        access_token = create_access_token(identity=new_user.serialize())
-        return jsonify(user=new_user.serialize(), accessToken=access_token)
-    else:
-        new_admin = Admin(user_name, password)
-        db.session.add(new_admin)
-        db.session.commit()
-        access_token = create_access_token(identity=new_admin.serialize())
-        return jsonify(user=new_admin.serialize(), accessToken=access_token)
+    is_active = body.get("is_active", None)
+    new_user = Users(user_name, password, is_active, admin) #------> SE PASA PARA METER EN MODEL COMO ADMIN.ID
+    db.session.add(new_user)
+    db.session.commit()
+    access_token = create_access_token(identity=new_user.serialize())
+    return jsonify(user=new_user.serialize(), accessToken=access_token)
     
-@api.route("/user/<int:id>", methods=["GET", "DELETE"]) ### DONE GET & DELETE USERS
+    
+@api.route("/user/<int:id>", methods=["GET", "DELETE"]) ### DONE DELETE USERS
 @jwt_required()
 def handle_one_user(id):
     admin = current_admin(get_jwt_identity())
@@ -70,20 +75,26 @@ def handle_one_user(id):
         user = Users.query.get(id)
         db.session.delete(user)
         db.session.commit()
-        return jsonify(user.serialize()), 200
+        return jsonify(user.serialize()), 200               #--->ERROR: BASE QUERY NO PERMITE SERIALIZE
 
 @api.route("/user/<int:id>", methods=["PUT"])
-@jwt_required
+@jwt_required()
 def update_user(id):
     admin = current_admin(get_jwt_identity())
-    user = Users.query.filter_by(id) 
-    print("USER", user)
-
+    user = Users.query.filter_by(id=id) 
+      
     body_json = request.get_json()
-    user.user_name = body_json["user_name"]
-    user.is_active = body_json["is_active"] 
+    user_name = body_json.get("user_name", None)
+    password = body_json.get("password", None)
+    is_active = body_json.get("is_active", None)
+
+    user.user_name = user_name
+    user.password = password
+    user.is_active = is_active
+    print("USER", user_name, password, is_active)
+    # db.session.add(user.user_name, user.password, user.is_active)
     db.session.commit()
-    return jsonify(user.serialize()), 200
+    return user, 200
 
 @api.route("/login", methods=["POST"]) ### DONE LOGIN USERS & ADMIN
 def sign_in():
@@ -102,7 +113,8 @@ def sign_in():
 
     else: 
         ### IN CASE MORE ADMINS ADDED: --> admin = Admin.query.filter_by(user_name=user_name).one_or_none() <--
-        admin = Admin.query.filter_by(id='1').first()
+        admin = Admin.query.filter_by(user_name=user_name).first()
+        print(admin)
         if not admin.check_password(password):
             return jsonify({"status": "NOP", "msg": "Are you the real admin? Please, try again."}), 401
         status = "OK"   
@@ -119,11 +131,11 @@ def current_user(identity):
 @jwt_required()
 def list_of_all_customers():
     user = current_user(get_jwt_identity())
+    print(user)
     customer = Customer.query.all()
     customers = list(map(lambda customer: customer.serialize()))
     return {customers}, 200
     
-
 #     ###GETTING SINGLE CUSTOMER INFO FROM USER###
 @api.route("/customer/<int:id>", methods=["GET"])
 @jwt_required()
@@ -139,7 +151,9 @@ def create_customer():
     user = current_user(get_jwt_identity())
     if request.method == "POST":
         body_json = request.get_json()
-        created_at = datetime.now()
+
+        now = datetime.now()
+        created_at = now.strftime('%d/%m/%Y %H:%M:%S')
 
         #Received binary file in body_json & storing in cloudinary --> Cloudinary store OK
         avatar_cloudinary = cloudinary.uploader.upload(body_json["avatar_url"], public_id = "agile_monkeys/avatar_image")
@@ -152,9 +166,7 @@ def create_customer():
 
         db.session.add(customer)
         db.session.commit()
-    
-
-    return { customer.serialize()}, 200
+        return { customer.serialize()}, 200
 
 # def update_customer():
 #     user = current_user(get_jwt_identity())
