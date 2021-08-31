@@ -42,7 +42,21 @@ modifications = db.Table('modifications',
     db.Column('modified_at', db.DateTime, default=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
 )
 
-class User(db.Model):
+class JsonSerializer(object):
+    def serialize(self):
+        dictionary = dict()
+        for key in object(self).attrs.keys():
+            value = getattr(self, key)
+            dictionary[key] = value
+
+        return dictionary            
+
+    @staticmethod
+    def serialize_list(l):
+        return [entry.serialize() for entry in l]
+        
+
+class User(db.Model, JsonSerializer):
 
     __tablename__ = 'user'
 
@@ -50,7 +64,7 @@ class User(db.Model):
     user_name = db.Column(db.String(30), unique=True, nullable=False)
     password = db.Column(db.String(80), unique=False, nullable=False)
     is_active = db.Column(db.Boolean, unique=False, nullable=False)
-    customers = db.relationship('Customer', secondary='modifications', backref=db.backref('user'), lazy=True)
+    customers = db.relationship('Customer', secondary='modifications', backref=db.backref('user'), overlaps="customers, user", viewonly=True, lazy=True)
     admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=False)
 
     def __init__(self, name, password, is_active, admin):
@@ -72,7 +86,27 @@ class User(db.Model):
     def check_user_password(self, password_param):
         return safe_str_cmp(self.password.encode('utf-8'), password_param.encode('utf-8'))
 
-class Customer(db.Model):
+
+
+class JsonSerializer(object):
+    
+    __json_modifiers__ = None
+    def to_json(self):
+        modifiers = self.__json_modifiers__ or dict()
+        rv = dict()
+
+        for key, modifier in modifiers.items():
+            value = getattr(self, key)
+            rv[key] = modifier(value, self)
+
+        return rv
+
+class CustomerJsonSerializer(JsonSerializer):
+    __json_modifiers__ = {
+        'users': lambda users, _: [dict(id=user.id) for user in users]
+    }
+
+class Customer(db.Model, JsonSerializer):
 
     __tablename__ = 'customer'
     
@@ -80,7 +114,7 @@ class Customer(db.Model):
     name = db.Column(db.String(30), unique=False, nullable=False)
     surname = db.Column(db.String(40), unique=False, nullable=False)
     avatar_url = db.Column(db.String(300), unique=False, nullable=True)
-    users = db.relationship('User', secondary='modifications', backref=db.backref('customer'), lazy='dynamic')
+    users = db.relationship('User', secondary='modifications', backref=db.backref('customer'), overlaps="customers,user", viewonly=True, lazy='dynamic')
     created_at = db.Column(db.DateTime, default=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
     
     def __init__(self, name, surname, avatar_url, user_id):
@@ -89,7 +123,6 @@ class Customer(db.Model):
        self.surname = surname
        self.avatar_url = avatar_url
        self.user_id_creator = user_id.id
-
 
     def __repr__(self):
         return '<Customer %r>' % self.name 

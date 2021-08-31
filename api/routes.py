@@ -103,7 +103,7 @@ def sign_in():
     user_name = body.get("user_name", None)
     password = body.get("password", None)
     
-    if "admin" not in user_name:
+    if "admin" not in user_name:    # WOULD CHANGE THIS LINE FOR ADMIN TO TYPE ANY NAME NOT CONTAINING "ADMIN"
         user = User.query.filter_by(user_name=user_name).one_or_none()
         if not user or not user.check_user_password(password):
             return jsonify({"status": status, "msg": "Are you sure folk? Please, try again."}), 401
@@ -132,8 +132,8 @@ def list_all_customers():
     user = current_user(get_jwt_identity())
     print(user)
     customer = Customer.query.all()
-    customers = list(map(lambda customer: customer.serialize()))
-    return {customers}, 200
+    customers = list(map(lambda customer: customer.serialize(), customer))
+    return jsonify(customers), 200
     
 #     ###GETTING SINGLE CUSTOMER INFO FROM USER###
 @api.route("/customer/<int:id>", methods=["GET"])
@@ -141,7 +141,7 @@ def list_all_customers():
 def handle_customer(id):
     user = current_user(get_jwt_identity())
     customer = Customer.query.get(id)
-    return { customer.serialize() }, 200
+    return (customer.serialize()), 200
 
 #    ###CREATING NEW CUSTOMER && UPDATING CUSTOMER FROM USER###
 @api.route("/customer", methods=["POST", "PUT"])
@@ -157,10 +157,10 @@ def create_customer():
         avatar_cloudinary = cloudinary.uploader.upload(body_json.get("avatar_url"), public_id = "agile_monkeys/avatar_image")
         avatar_url = avatar_cloudinary["secure_url"]
         customer = Customer(name, surname, avatar_url, user)
-        #print("USER", user)
+        print("AVATAR", avatar_url)
         db.session.add(customer)
         db.session.commit()
-        return { customer.serialize()}, 200
+        return (customer.serialize()), 200
 
     ###UPDATING NEW CUSTOMER FROM USER###
 # def update_customer():
