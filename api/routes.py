@@ -77,24 +77,22 @@ def handle_one_user(id):
         db.session.commit()
         return jsonify(user.serialize()), 200               #--->ERROR: BASE QUERY NO PERMITE SERIALIZE
 
-@api.route("/user/<int:id>", methods=["PUT"])
+@api.route("/user/<int:id>", methods=["PUT"]) #UPDATE USERS OK
 @jwt_required()
 def update_user(id):
     admin = current_admin(get_jwt_identity())
-    user = User.query.filter_by(id=id) 
-      
+    updated_user = User.query.get_or_404(id) 
     body_json = request.get_json()
     user_name = body_json.get("user_name", None)
     password = body_json.get("password", None)
     is_active = body_json.get("is_active", None)
 
-    user.user_name = user_name
-    user.password = password
-    user.is_active = is_active
-    print("USER", user_name, password, is_active)
-    # db.session.add(user.user_name, user.password, user.is_active)
+    updated_user.user_name = user_name
+    updated_user.password = password
+    updated_user.is_active = is_active
+
     db.session.commit()
-    return user, 200
+    return jsonify(updated_user.serialize()), 200
 
 @api.route("/login", methods=["POST"]) ### DONE LOGIN USERS & ADMIN
 def sign_in():
@@ -105,17 +103,17 @@ def sign_in():
     
     if "admin" not in user_name:    # WOULD CHANGE THIS LINE FOR ADMIN TO TYPE ANY NAME NOT CONTAINING "ADMIN"
         user = User.query.filter_by(user_name=user_name).one_or_none()
-        if not user or not user.check_user_password(password):
+        if not user or not user.check_password(password):
             return jsonify({"status": status, "msg": "Are you sure folk? Please, try again."}), 401
         status = "OK"
         access_token = create_access_token(identity=user.serialize())
         return jsonify(status = status, user=user.serialize(), accessToken=access_token)
 
-    else: 
+    if "admin" in user_name: 
         ### IN CASE MORE ADMINS ADDED: --> admin = Admin.query.filter_by(user_name=user_name).one_or_none() <--
-        admin = Admin.query.filter_by(user_name=user_name).first()
-        if not admin.check_admin_password(password):
-            return jsonify({"status": "NOP", "msg": "Are you the real admin? Please, try again."}), 401
+        admin = Admin.query.filter_by(user_name=user_name).one_or_none()
+        if not admin or not admin.check_password(password):
+            return jsonify({"status": status, "msg": "Are you the real admin? Please, try again."}), 401
         status = "OK"   
         access_token = create_access_token(identity=admin.serialize())
         return jsonify(status = status, admin=admin.serialize(), accessToken=access_token)    

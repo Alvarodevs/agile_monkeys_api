@@ -28,11 +28,10 @@ class Admin(db.Model):
     def serialize(self):
         return {
             "id": self.id,
-            "user_name": self.user_name,
-            "users_created": self.users
+            "ad_name": self.user_name,
         }
 
-    def check_admin_password(self, password_param):
+    def check_password(self, password_param):
         return safe_str_cmp(self.password.encode('utf-8'), password_param.encode('utf-8'))
 
 
@@ -42,21 +41,7 @@ modifications = db.Table('modifications',
     db.Column('modified_at', db.DateTime, default=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
 )
 
-class JsonSerializer(object):
-    def serialize(self):
-        dictionary = dict()
-        for key in object(self).attrs.keys():
-            value = getattr(self, key)
-            dictionary[key] = value
-
-        return dictionary            
-
-    @staticmethod
-    def serialize_list(l):
-        return [entry.serialize() for entry in l]
-        
-
-class User(db.Model, JsonSerializer):
+class User(db.Model):
 
     __tablename__ = 'user'
 
@@ -83,30 +68,10 @@ class User(db.Model, JsonSerializer):
             "is_active": self.is_active
         }
 
-    def check_user_password(self, password_param):
+    def check_password(self, password_param):
         return safe_str_cmp(self.password.encode('utf-8'), password_param.encode('utf-8'))
 
-
-
-class JsonSerializer(object):
-    
-    __json_modifiers__ = None
-    def to_json(self):
-        modifiers = self.__json_modifiers__ or dict()
-        rv = dict()
-
-        for key, modifier in modifiers.items():
-            value = getattr(self, key)
-            rv[key] = modifier(value, self)
-
-        return rv
-
-class CustomerJsonSerializer(JsonSerializer):
-    __json_modifiers__ = {
-        'users': lambda users, _: [dict(id=user.id) for user in users]
-    }
-
-class Customer(db.Model, JsonSerializer):
+class Customer(db.Model):
 
     __tablename__ = 'customer'
     
@@ -150,7 +115,6 @@ class Customer(db.Model, JsonSerializer):
         return {
             "id": self.id,
             "name": self.name,
-
         }
 
 # class Modifications(db.Model):    
