@@ -14,6 +14,7 @@ flask = "*"
 sqlalchemy = "*"
 cloudinary = "*"
 flask-dotenv = "*"
+flask-serialize = "*"
 
 [dev-packages]
 

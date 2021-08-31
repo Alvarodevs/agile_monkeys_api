@@ -6,40 +6,39 @@ from sqlalchemy.orm import backref, relationship
 from sqlalchemy.sql.sqltypes import Integer
 from werkzeug.security import safe_str_cmp
 
-
 db = SQLAlchemy()
 
-class Admin(db.Model):
+# class Admin(db.Model):
 
-    __tablename__ = 'admin'
+#     __tablename__ = 'admin'
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_name = db.Column(db.String(30), unique=True, nullable=False)
-    password = db.Column(db.String(80), unique=True, nullable=False)
-    users = db.relationship('User', backref='admin', lazy=True, primaryjoin="Admin.id == User.admin_id")
+#     id = db.Column(db.Integer, primary_key=True)
+#     user_name = db.Column(db.String(30), unique=True, nullable=False)
+#     password = db.Column(db.String(80), unique=True, nullable=False)
+#     users = db.relationship('User', backref='admin', lazy=True, primaryjoin="Admin.id == User.admin_id")
 
-    def __init__(self, name, password):
-       self.user_name = name
-       self.password = password
+#     def __init__(self, name, password):
+#        self.user_name = name
+#        self.password = password
 
-    def __repr__(self):
-        return '<Admin %r>' % self.user_name
+#     def __repr__(self):
+#         return '<Admin %r>' % self.user_name
 
-    def serialize(self):
-        return {
-            "id": self.id,
-            "ad_name": self.user_name,
-        }
+#     def serialize(self):
+#         return {
+#             "id": self.id,
+#             "ad_name": self.user_name,
+#         }
 
-    def check_password(self, password_param):
-        return safe_str_cmp(self.password.encode('utf-8'), password_param.encode('utf-8'))
+#     def check_password(self, password_param):
+#         return safe_str_cmp(self.password.encode('utf-8'), password_param.encode('utf-8'))
 
 
-modifications = db.Table('modifications',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
-    db.Column('customer_id', db.Integer, db.ForeignKey('customer.id'), primary_key=True),
-    db.Column('modified_at', db.DateTime, default=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
-)
+# modifications = db.Table('modifications',
+#     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+#     db.Column('customer_id', db.Integer, db.ForeignKey('customer.id'), primary_key=True),
+#     db.Column('modified_at', db.DateTime, default=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
+# )
 
 class User(db.Model):
 
@@ -49,14 +48,13 @@ class User(db.Model):
     user_name = db.Column(db.String(30), unique=True, nullable=False)
     password = db.Column(db.String(80), unique=False, nullable=False)
     is_active = db.Column(db.Boolean, unique=False, nullable=False)
-    customers = db.relationship('Customer', secondary='modifications', backref=db.backref('user'), overlaps="customers, user", viewonly=True, lazy=True)
-    admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=False)
-
-    def __init__(self, name, password, is_active, admin):
+    is_admin = db.Column (db.Boolean, unique=False, nullable=False)
+    
+    def __init__(self, name, password, is_active, is_admin):
        self.user_name = name
        self.password = password
        self.is_active = is_active
-       self.admin_id = admin.id
+       self.is_admin = is_admin
        
     def __repr__(self):
         return '<User %r>' % self.user_name 
@@ -65,7 +63,8 @@ class User(db.Model):
         return {
             "id": self.id,
             "user_name": self.user_name,
-            "is_active": self.is_active
+            "is_active": self.is_active, 
+            "is_admin": self.is_admin
         }
 
     def check_password(self, password_param):
@@ -79,7 +78,7 @@ class Customer(db.Model):
     name = db.Column(db.String(30), unique=False, nullable=False)
     surname = db.Column(db.String(40), unique=False, nullable=False)
     avatar_url = db.Column(db.String(300), unique=False, nullable=True)
-    users = db.relationship('User', secondary='modifications', backref=db.backref('customer'), overlaps="customers,user", viewonly=True, lazy='dynamic')
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
     
     def __init__(self, name, surname, avatar_url, user_id):
@@ -87,7 +86,8 @@ class Customer(db.Model):
        self.name = name
        self.surname = surname
        self.avatar_url = avatar_url
-       self.user_id_creator = user_id.id
+       self.user_id = user_id.id
+       
 
     def __repr__(self):
         return '<Customer %r>' % self.name 
@@ -98,8 +98,8 @@ class Customer(db.Model):
             "name": self.name,
             "surname": self.surname,
             "avatar_url": self.avatar_url,
+            "created_by": self.user_id,
             "created": self.created_at,
-            "created_by": self.users,
         }
     
     #Storing file name of avatar
@@ -111,18 +111,32 @@ class Customer(db.Model):
         [public_id, extension] = file_name[-1].split(".")
         return public_id
 
-    def get_customer_list(self):
+    # def get_customer_list(self):
+    #     return {
+    #         "id": self.id,
+    #         "name": self.name,
+    #     }
+
+class Modifications(db.Model):    
+    __tablename__ = 'modifications'
+
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
+    modified_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) 
+    modification_date = db.Column(db.DateTime, default=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
+    
+    def __init__(self, id, user_id):
+       
+       self.customer_id = id
+       self.modified_by = user_id
+       
+    def __repr__(self):
+        return '<Customer %r>' % self.name 
+
+    def serialize(self):
         return {
             "id": self.id,
-            "name": self.name,
+            "customer": self.customer_id,
+            "user": self.modified_by,
+            "date_of_modification": self.modification_date
         }
-
-# class Modifications(db.Model):    
-#     __tablename__ = 'modifications'
-
-#     id = db.Column(db.Integer, primary_key=True)
-#     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) 
-#     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False) #<----------
-#     modification_date = db.Column(db.DateTime, default=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
-#     user = db.relationship(User, backref=backref('modifications', cascade='all, delete_orphan'))
-#     customer = db.relationship(Customer, backref=backref('modifications', cascade='all, delete_orphan'))

@@ -4,7 +4,6 @@ from api.routes import api
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 
-
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:pablo180518@localhost:5432/agile_monkeys"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
