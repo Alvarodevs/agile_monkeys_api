@@ -30,6 +30,7 @@ api = Blueprint('api', __name__)
 #     return jsonify(admins), 200
 
 #####       USERS SECTION           ######
+
 @api.route("/users_sign_up", methods=["POST"]) #---OK                                                             
 def create_user():
     body = request.get_json(force=True)
@@ -38,11 +39,18 @@ def create_user():
     is_active = body.get("is_active", None)
     is_admin = body.get("is_admin")
 
-    new_user = User(user_name, password, is_active, is_admin)
-    db.session.add(new_user)
-    db.session.commit()
-    access_token = create_access_token(identity=new_user.serialize())
-    return jsonify(user=new_user.serialize(), accessToken=access_token)
+    if len(password) < 8:
+        return "Password is too short, try again."
+
+    elif len(user_name) < 4:
+        return "User name is too short, try again."
+
+    else:
+        new_user = User(user_name, password, is_active, is_admin)
+        db.session.add(new_user)
+        db.session.commit()
+        access_token = create_access_token(identity=new_user.serialize())
+        return jsonify(user=new_user.serialize(), accessToken=access_token)
 
 
 @api.route("/users", methods=["GET"]) #---OK
@@ -126,7 +134,7 @@ def create_customer():
         surname = body_json.get('surname', None)
 
         #Received binary file in body_json & storing in cloudinary --> Cloudinary store OK
-        avatar_cloudinary = cloudinary.uploader.upload(body_json.get("avatar_url"), public_id = "agile_monkeys/avatar_image")
+        avatar_cloudinary = cloudinary.uploader.upload(body_json.get("avatar_url"), folder = "agile_monkeys")
         avatar_url = avatar_cloudinary["secure_url"]
         
         customer = Customer(name, surname, avatar_url, user)
@@ -160,51 +168,48 @@ def handle_customer(id):
 @jwt_required()   
 def update_customer(id):
     user = current_user(get_jwt_identity())
-
     customer_up_to_date = Customer.query.get_or_404(id)
-    
     
     body_json = request.get_json()
     name = body_json.get("name", None)
     surname = body_json.get("surname", None)
-    avatar_url = cloudinary.uploader.upload(body_json.get("avatar_url"), public_id = "agile_monkeys/avatar_image")
+    avatar_url = cloudinary.uploader.upload(body_json.get("avatar_url"), public_id = "agile_monkeys/avatar_image") 
+    user_id = user.id
 
     db.session.commit()
 
     if avatar_url is not None:
-        cloudinary.uploader.destroy(Customer.avatar_public(), )
-
+        cloudinary.uploader.destroy(customer_up_to_date.avatar_public())
+    
     customer_up_to_date.name = name
     customer_up_to_date.surname = surname
-    customer_up_to_date.avatar_url = avatar_url
-
-    modifications_log = Modifications(id, user.id)
+    customer_up_to_date.avatar_url = avatar_url["url"]
+    customer_up_to_date.user_id = user_id
+  
+    modifications_log = Modifications(customer_up_to_date.id, user.id)
+    print("MODIFICATIONS LOG", modifications_log)
     db.session.add(modifications_log)
     db.session.commit()
 
-    # modifications_log = Modifications(id, user.id)
-    # print(id)
-    # db.session.add(modifications_log)
-    # db.session.commit
     return jsonify(customer_up_to_date.serialize(), modifications_log.serialize()), 200
     
-    
+    ##DELETING CUSTOMER FROM USER###
+@api.route("/customer/<int:id>", methods=["DELETE"])
+@jwt_required()
+def delete_customer(id):
+    user = current_user(get_jwt_identity())
+    customer = Customer.query.get(id)
+    print(customer)
+    db.session.delete(customer)
+    db.session.commit()
+
+    return (customer.serialize()), 200
 
 
 # #@api.route("/")
 # # def update_customer():
 # #         pass
 
-#     ###DELETING CUSTOMER FROM USER###
-# @api.route("/customer/<int:id>", methods=["DELETE"])
-# @jwt_required()
-# def delete_customer(id):
-#     user = current_user(get_jwt_identity())
-#     customer = Customer.query.get(id)
-
-#     db.session.delete(customer)
-#     db.session.commit()
-
-#     return { customer.serialize() }, 200
+#     
 
 

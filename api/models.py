@@ -87,7 +87,6 @@ class Customer(db.Model):
        self.surname = surname
        self.avatar_url = avatar_url
        self.user_id = user_id.id
-       
 
     def __repr__(self):
         return '<Customer %r>' % self.name 
@@ -111,12 +110,6 @@ class Customer(db.Model):
         [public_id, extension] = file_name[-1].split(".")
         return public_id
 
-    # def get_customer_list(self):
-    #     return {
-    #         "id": self.id,
-    #         "name": self.name,
-    #     }
-
 class Modifications(db.Model):    
     __tablename__ = 'modifications'
 
@@ -125,13 +118,13 @@ class Modifications(db.Model):
     modified_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) 
     modification_date = db.Column(db.DateTime, default=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
     
-    def __init__(self, id, user_id):
+    def __init__(self, customer_id, user_id):
        
-       self.customer_id = id
+       self.customer_id = customer_id
        self.modified_by = user_id
        
     def __repr__(self):
-        return '<Customer %r>' % self.name 
+        return '<Modifications %r>' % self.modification_date 
 
     def serialize(self):
         return {
