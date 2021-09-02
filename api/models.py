@@ -1,9 +1,6 @@
 from enum import unique
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import DateTime
 from datetime import datetime
-from sqlalchemy.orm import backref, relationship
-from sqlalchemy.sql.sqltypes import Integer
 from werkzeug.security import safe_str_cmp
 
 db = SQLAlchemy()
@@ -17,6 +14,7 @@ class User(db.Model):
     password = db.Column(db.String(80), unique=False, nullable=False)
     is_active = db.Column(db.Boolean, unique=False, nullable=False)
     is_admin = db.Column (db.Boolean, unique=False, nullable=False)
+    modification = db.relationship("Modifications", backref='user', cascade="all, delete-orphan", lazy=True)
     
     def __init__(self, name, password, is_active, is_admin):
        self.user_name = name
@@ -48,6 +46,7 @@ class Customer(db.Model):
     avatar_url = db.Column(db.String(300), unique=False, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
+    modification = db.relationship("Modifications", backref='customer', cascade="all, delete-orphan",lazy=True)
     
     def __init__(self, name, surname, avatar_url, user_id):
        
@@ -83,7 +82,8 @@ class Modifications(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
-    modified_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) 
+    modified_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
     modification_date = db.Column(db.DateTime, default=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
     
     def __init__(self, customer_id, user_id):

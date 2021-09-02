@@ -7,28 +7,6 @@ import cloudinary.uploader
 
 api = Blueprint('api', __name__)
 
-
-#####       ADMIN SECTION           ######
-# def current_admin(identity):                        
-#     return Admin.query.get(identity['id'])
-
-# @api.route("/admin_sign_up", methods=["POST"])   #-----> future OAUTH AUTHENTICATION
-# def admin_sign_up():    
-#     body = request.get_json(force=True)
-#     user_name = body.get("user_name", None)
-#     password = body.get("password", None)
-#     new_admin = Admin(user_name, password)
-#     db.session.add(new_admin)
-#     db.session.commit()
-#     access_token = create_access_token(identity=new_admin.serialize())
-#     return jsonify(user=new_admin.serialize(), accessToken=access_token)
-
-# @api.route("/admin", methods=["GET"]) ### DONE LIST ADMIN
-# def get_admins():
-#     admin = Admin.query.all()
-#     admins = list(map(lambda admin: admin.serialize(), admin))
-#     return jsonify(admins), 200
-
 #####       USERS SECTION           ######
 
 @api.route("/users_sign_up", methods=["POST"]) #---OK                                                             
@@ -161,7 +139,6 @@ def handle_customer(id):
     customer = Customer.query.get(id)
     return (customer.serialize()), 200
 
-    
     ###UPDATING NEW CUSTOMER FROM USER###
 
 @api.route("/customer/<int:id>", methods=["PUT", "POST"]) 
