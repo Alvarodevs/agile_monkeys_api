@@ -56,8 +56,8 @@ def create_user():
 @api.route("/users", methods=["GET"]) #---OK
 @jwt_required()
 def handle_users():
-    admin = current_user(get_jwt_identity())
-    if not admin or not admin.is_admin == True:
+    user = current_user(get_jwt_identity())
+    if user.is_admin == True:
         user = User.query.all()
         users = list(map(lambda user: user.serialize(), user))
         return jsonify(users), 200
@@ -176,8 +176,6 @@ def update_customer(id):
     avatar_url = cloudinary.uploader.upload(body_json.get("avatar_url"), public_id = "agile_monkeys/avatar_image") 
     user_id = user.id
 
-    db.session.commit()
-
     if avatar_url is not None:
         cloudinary.uploader.destroy(customer_up_to_date.avatar_public())
     
@@ -185,13 +183,12 @@ def update_customer(id):
     customer_up_to_date.surname = surname
     customer_up_to_date.avatar_url = avatar_url["url"]
     customer_up_to_date.user_id = user_id
-  
-    modifications_log = Modifications(customer_up_to_date.id, user.id)
-    print("MODIFICATIONS LOG", modifications_log)
-    db.session.add(modifications_log)
+
+    modification = Modifications(customer_up_to_date.id, user.id)
+    db.session.add(modification)
     db.session.commit()
 
-    return jsonify(customer_up_to_date.serialize(), modifications_log.serialize()), 200
+    return jsonify(customer_up_to_date.serialize(), modification.serialize()), 200
     
     ##DELETING CUSTOMER FROM USER###
 @api.route("/customer/<int:id>", methods=["DELETE"])
@@ -199,17 +196,7 @@ def update_customer(id):
 def delete_customer(id):
     user = current_user(get_jwt_identity())
     customer = Customer.query.get(id)
-    print(customer)
     db.session.delete(customer)
     db.session.commit()
 
     return (customer.serialize()), 200
-
-
-# #@api.route("/")
-# # def update_customer():
-# #         pass
-
-#     
-
-

@@ -8,38 +8,6 @@ from werkzeug.security import safe_str_cmp
 
 db = SQLAlchemy()
 
-# class Admin(db.Model):
-
-#     __tablename__ = 'admin'
-
-#     id = db.Column(db.Integer, primary_key=True)
-#     user_name = db.Column(db.String(30), unique=True, nullable=False)
-#     password = db.Column(db.String(80), unique=True, nullable=False)
-#     users = db.relationship('User', backref='admin', lazy=True, primaryjoin="Admin.id == User.admin_id")
-
-#     def __init__(self, name, password):
-#        self.user_name = name
-#        self.password = password
-
-#     def __repr__(self):
-#         return '<Admin %r>' % self.user_name
-
-#     def serialize(self):
-#         return {
-#             "id": self.id,
-#             "ad_name": self.user_name,
-#         }
-
-#     def check_password(self, password_param):
-#         return safe_str_cmp(self.password.encode('utf-8'), password_param.encode('utf-8'))
-
-
-# modifications = db.Table('modifications',
-#     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
-#     db.Column('customer_id', db.Integer, db.ForeignKey('customer.id'), primary_key=True),
-#     db.Column('modified_at', db.DateTime, default=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
-# )
-
 class User(db.Model):
 
     __tablename__ = 'user'
@@ -101,7 +69,7 @@ class Customer(db.Model):
             "created": self.created_at,
         }
     
-    #Storing file name of avatar
+    #Method file name of avatar
 
     def avatar_public(self):
         if self.avatar_url is None:
